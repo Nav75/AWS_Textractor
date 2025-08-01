@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AWS Textract Pricing Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap");
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f7fafc;
+        color: #2d3748;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-xl shadow-2xl p-8 max-w-4xl w-full">
+      <h1 class="text-3xl font-bold text-center mb-2 text-gray-800">
+        AWS Textract Pricing Calculator
+      </h1>
+      <p class="text-center text-gray-500 mb-6">
+        Pricing for the first 1 million pages per month. Select a region to view
+        pricing.
+      </p>
+
+      <div class="space-y-6">
+        <!-- Region Selector Section -->
+        <div
+          class="mb-6 flex flex-col md:flex-row items-center justify-center space-y-2 md:space-y-0 md:space-x-4"
+        >
+          <label for="region-selector" class="font-semibold text-gray-700"
+            >Select AWS Region:</label
+          >
+          <select
+            id="region-selector"
+            class="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+          >
+            <option value="us-east-1" selected>US East (N. Virginia)</option>
+            <option value="us-west-2">US West (Oregon)</option>
+            <option value="ap-south-1">Asia Pacific (Mumbai)</option>
+            <option value="eu-west-1">Europe (Ireland)</option>
+            <option value="ap-northeast-1">Asia Pacific (Tokyo)</option>
+          </select>
+        </div>
+
+        <!-- Pretrained Features Section -->
+        <div>
+          <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b-2 pb-2">
+            Pretrained Features (Analyze Document API)
+          </h2>
+          <p class="text-sm text-gray-500 italic mb-4">
+            Note: The "Layout" and "Signatures" features are included free of
+            charge when combined with other features.
+          </p>
+          <div
+            class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center font-medium text-gray-600 mb-2"
+          >
+            <div class="col-span-1 md:col-span-2">Feature</div>
+            <div>Price per 1,000 Pages ($)</div>
+            <div>Pages per Month</div>
+            <div>Monthly Cost ($)</div>
+          </div>
+          <div id="pretrained-features" class="space-y-2">
+            <!-- Feature rows will be dynamically added here -->
+          </div>
+        </div>
+
+        <!-- Specialized APIs Section -->
+        <div>
+          <h2
+            class="text-xl font-semibold text-gray-700 mb-4 border-b-2 pb-2 mt-8"
+          >
+            Specialized APIs
+          </h2>
+          <div
+            class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center font-medium text-gray-600 mb-2"
+          >
+            <div class="col-span-1 md:col-span-2">API</div>
+            <div>Price per 1,000 Pages ($)</div>
+            <div>Pages per Month</div>
+            <div>Monthly Cost ($)</div>
+          </div>
+          <div id="specialized-apis" class="space-y-2">
+            <!-- Specialized API rows will be dynamically added here -->
+          </div>
+        </div>
+
+        <!-- Custom Features Section -->
+        <div>
+          <h2
+            class="text-xl font-semibold text-gray-700 mb-4 border-b-2 pb-2 mt-8"
+          >
+            Custom Features (Analyze Document API)
+          </h2>
+          <p class="text-sm text-gray-500 italic mb-4">
+            Requires training an adapter with the AWS Console.
+          </p>
+          <div
+            class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center font-medium text-gray-600 mb-2"
+          >
+            <div class="col-span-1 md:col-span-2">Feature</div>
+            <div>Price per 1,000 Pages ($)</div>
+            <div>Pages per Month</div>
+            <div>Monthly Cost ($)</div>
+          </div>
+          <div id="custom-features" class="space-y-2">
+            <!-- Custom feature rows will be dynamically added here -->
+          </div>
+        </div>
+
+        <!-- Total Cost Section -->
+        <div class="mt-8 pt-4 border-t-2">
+          <div
+            class="flex flex-col md:flex-row justify-between items-center bg-blue-50 p-4 rounded-lg"
+          >
+            <span class="text-xl font-bold text-blue-700"
+              >Total Monthly Cost:</span
+            >
+            <span
+              id="total-cost"
+              class="text-3xl font-bold text-blue-700 mt-2 md:mt-0"
+              >$0.00</span
+            >
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex justify-center mt-6 space-x-4">
+          <button
+            id="reset-button"
+            class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-300"
+          >
+            Reset
+          </button>
+          <button
+            id="download-button"
+            class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-300"
+          >
+            Download as CSV
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Store pricing data for multiple regions
+      const PRICING_DATA = {
+        "us-east-1": {
+          name: "US East (N. Virginia)",
+          "Pretrained Features": [
+            {
+              name: "Detect Document Text",
+              pricePer1000: 1.5,
+              id: "detect-text",
+            },
+            { name: "Layout", pricePer1000: 4.0, id: "layout" },
+            { name: "Queries", pricePer1000: 15.0, id: "queries" },
+            { name: "Tables", pricePer1000: 15.0, id: "tables" },
+            { name: "Forms", pricePer1000: 50.0, id: "forms" },
+            { name: "Signatures", pricePer1000: 3.5, id: "signatures" },
+            {
+              name: "Tables + Queries",
+              pricePer1000: 20.0,
+              id: "tables-queries",
+            },
+            {
+              name: "Forms + Queries",
+              pricePer1000: 55.0,
+              id: "forms-queries",
+            },
+            { name: "Tables + Forms", pricePer1000: 65.0, id: "tables-forms" },
+            {
+              name: "Tables + Forms + Queries",
+              pricePer1000: 70.0,
+              id: "tables-forms-queries",
+            },
+            { name: "Layout + Forms", pricePer1000: 50.0, id: "layout-forms" },
+            {
+              name: "Layout + Tables",
+              pricePer1000: 15.0,
+              id: "layout-tables",
+            },
+            {
+              name: "Layout + Queries",
+              pricePer1000: 15.0,
+              id: "layout-queries",
+            },
+            {
+              name: "Layout + Forms + Tables",
+              pricePer1000: 65.0,
+              id: "layout-forms-tables",
+            },
+            {
+              name: "Layout + Tables + Queries",
+              pricePer1000: 20.0,
+              id: "layout-tables-queries",
+            },
+            {
+              name: "Layout + Forms + Queries",
+              pricePer1000: 55.0,
+              id: "layout-forms-queries",
+            },
+            {
+              name: "Layout + Forms + Tables + Queries",
+              pricePer1000: 70.0,
+              id: "layout-forms-tables-queries",
+            },
+          ],
+          "Specialized APIs": [
+            {
+              name: "Analyze Lending (Lending Documents)",
+              pricePer1000: 70.0,
+              id: "analyze-lending",
+            },
+            {
+              name: "Analyze Expense (Invoices & Receipts)",
+              pricePer1000: 10.0,
+              id: "analyze-expense",
+            },
+            {
+              name: "Analyze ID (Identity Documents)",
+              pricePer1000: 25.0,
+              id: "analyze-id",
+            },
+          ],
+          "Custom Features": [
+            {
+              name: "Custom Queries",
+              pricePer1000: 25.0,
+              id: "custom-queries",
+            },
+            {
+              name: "Custom Queries + Pretrained Tables",
+              pricePer1000: 30.0,
+              id: "custom-queries-tables",
+            },
+            {
+              name: "Custom Queries + Pretrained Forms",
+              pricePer1000: 65.0,
+              id: "custom-queries-forms",
+            },
+            {
+              name: "Custom Queries + Pretrained Forms + Pretrained Tables",
+              pricePer1000: 80.0,
+              id: "custom-queries-forms-tables",
+            },
+          ],
+        },
+        "us-west-2": {
+          name: "US West (Oregon)",
+          "Pretrained Features": [
+            {
+              name: "Detect Document Text",
+              pricePer1000: 1.5,
+              id: "detect-text",
+            },
+            { name: "Layout", pricePer1000: 4.0, id: "layout" },
+            { name: "Queries", pricePer1000: 15.0, id: "queries" },
+            { name: "Tables", pricePer1000: 15.0, id: "tables" },
+            { name: "Forms", pricePer1000: 50.0, id: "forms" },
+            { name: "Signatures", pricePer1000: 3.5, id: "signatures" },
+            {
+              name: "Tables + Queries",
+              pricePer1000: 20.0,
+              id: "tables-queries",
+            },
+            {
+              name: "Forms + Queries",
+              pricePer1000: 55.0,
+              id: "forms-queries",
+            },
+            { name: "Tables + Forms", pricePer1000: 65.0, id: "tables-forms" },
+            {
+              name: "Tables + Forms + Queries",
+              pricePer1000: 70.0,
+              id: "tables-forms-queries",
+            },
+            { name: "Layout + Forms", pricePer1000: 50.0, id: "layout-forms" },
+            {
+              name: "Layout + Tables",
+              pricePer1000: 15.0,
+              id: "layout-tables",
+            },
+            {
+              name: "Layout + Queries",
+              pricePer1000: 15.0,
+              id: "layout-queries",
+            },
+            {
+              name: "Layout + Forms + Tables",
+              pricePer1000: 65.0,
+              id: "layout-forms-tables",
+            },
+            {
+              name: "Layout + Tables + Queries",
+              pricePer1000: 20.0,
+              id: "layout-tables-queries",
+            },
+            {
+              name: "Layout + Forms + Queries",
+              pricePer1000: 55.0,
+              id: "layout-forms-queries",
+            },
+            {
+              name: "Layout + Forms + Tables + Queries",
+              pricePer1000: 70.0,
+              id: "layout-forms-tables-queries",
+            },
+          ],
+          "Specialized APIs": [
+            {
+              name: "Analyze Lending (Lending Documents)",
+              pricePer1000: 70.0,
+              id: "analyze-lending",
+            },
+            {
+              name: "Analyze Expense (Invoices & Receipts)",
+              pricePer1000: 10.0,
+              id: "analyze-expense",
+            },
+            {
+              name: "Analyze ID (Identity Documents)",
+              pricePer1000: 25.0,
+              id: "analyze-id",
+            },
+          ],
+          "Custom Features": [
+            {
+              name: "Custom Queries",
+              pricePer1000: 25.0,
+              id: "custom-queries",
+            },
+            {
+              name: "Custom Queries + Pretrained Tables",
+              pricePer1000: 30.0,
+              id: "custom-queries-tables",
+            },
+            {
+              name: "Custom Queries + Pretrained Forms",
+              pricePer1000: 65.0,
+              id: "custom-queries-forms",
+            },
+            {
+              name: "Custom Queries + Pretrained Forms + Pretrained Tables",
+              pricePer1000: 80.0,
+              id: "custom-queries-forms-tables",
+            },
+          ],
+        },
+        "ap-south-1": {
+          name: "Asia Pacific (Mumbai)",
+          "Pretrained Features": [
+            {
+              name: "Detect Document Text",
+              pricePer1000: 1.5,
+              id: "detect-text",
+            },
+            { name: "Layout", pricePer1000: 4.0, id: "layout" },
+            { name: "Queries", pricePer1000: 15.0, id: "queries" },
+            { name: "Tables", pricePer1000: 15.0, id: "tables" },
+            { name: "Forms", pricePer1000: 50.0, id: "forms" },
+            { name: "Signatures", pricePer1000: 3.5, id: "signatures" },
+            {
+              name: "Tables + Queries",
+              pricePer1000: 20.0,
+              id: "tables-queries",
+            },
+            {
+              name: "Forms + Queries",
+              pricePer1000: 55.0,
+              id: "forms-queries",
+            },
+            { name: "Tables + Forms", pricePer1000: 65.0, id: "tables-forms" },
+            {
+              name: "Tables + Forms + Queries",
+              pricePer1000: 70.0,
+              id: "tables-forms-queries",
+            },
+            { name: "Layout + Forms", pricePer1000: 50.0, id: "layout-forms" },
+            {
+              name: "Layout + Tables",
+              pricePer1000: 15.0,
+              id: "layout-tables",
+            },
+            {
+              name: "Layout + Queries",
+              pricePer1000: 15.0,
+              id: "layout-queries",
+            },
+            {
+              name: "Layout + Forms + Tables",
+              pricePer1000: 65.0,
+              id: "layout-forms-tables",
+            },
+            {
+              name: "Layout + Tables + Queries",
+              pricePer1000: 20.0,
+              id: "layout-tables-queries",
+            },
+            {
+              name: "Layout + Forms + Queries",
+              pricePer1000: 55.0,
+              id: "layout-forms-queries",
+            },
+            {
+              name: "Layout + Forms + Tables + Queries",
+              pricePer1000: 70.0,
+              id: "layout-forms-tables-queries",
+            },
+          ],
+          "Specialized APIs": [
+            {
+              name: "Analyze Lending (Lending Documents)",
+              pricePer1000: 70.0,
+              id: "analyze-lending",
+            },
+            {
+              name: "Analyze Expense (Invoices & Receipts)",
+              pricePer1000: 10.0,
+              id: "analyze-expense",
+            },
+            {
+              name: "Analyze ID (Identity Documents)",
+              pricePer1000: 25.0,
+              id: "analyze-id",
+            },
+          ],
+          "Custom Features": [
+            {
+              name: "Custom Queries",
+              pricePer1000: 25.0,
+              id: "custom-queries",
+            },
+            {
+              name: "Custom Queries + Pretrained Tables",
+              pricePer1000: 30.0,
+              id: "custom-queries-tables",
+            },
+            {
+              name: "Custom Queries + Pretrained Forms",
+              pricePer1000: 65.0,
+              id: "custom-queries-forms",
+            },
+            {
+              name: "Custom Queries + Pretrained Forms + Pretrained Tables",
+              pricePer1000: 80.0,
+              id: "custom-queries-forms-tables",
+            },
+          ],
+        },
+        "eu-west-1": {
+          name: "Europe (Ireland)",
+          "Pretrained Features": [
+            {
+              name: "Detect Document Text",
+              pricePer1000: 1.75,
+              id: "detect-text",
+            },
+            { name: "Layout", pricePer1000: 4.67, id: "layout" },
+            { name: "Queries", pricePer1000: 17.5, id: "queries" },
+            { name: "Tables", pricePer1000: 17.5, id: "tables" },
+            { name: "Forms", pricePer1000: 58.33, id: "forms" },
+            { name: "Signatures", pricePer1000: 4.08, id: "signatures" },
+            {
+              name: "Tables + Queries",
+              pricePer1000: 23.33,
+              id: "tables-queries",
+            },
+            {
+              name: "Forms + Queries",
+              pricePer1000: 64.17,
+              id: "forms-queries",
+            },
+            { name: "Tables + Forms", pricePer1000: 75.83, id: "tables-forms" },
+            {
+              name: "Tables + Forms + Queries",
+              pricePer1000: 81.67,
+              id: "tables-forms-queries",
+            },
+            { name: "Layout + Forms", pricePer1000: 58.33, id: "layout-forms" },
+            {
+              name: "Layout + Tables",
+              pricePer1000: 17.5,
+              id: "layout-tables",
+            },
+            {
+              name: "Layout + Queries",
+              pricePer1000: 17.5,
+              id: "layout-queries",
+            },
+            {
+              name: "Layout + Forms + Tables",
+              pricePer1000: 75.83,
+              id: "layout-forms-tables",
+            },
+            {
+              name: "Layout + Tables + Queries",
+              pricePer1000: 23.33,
+              id: "layout-tables-queries",
+            },
+            {
+              name: "Layout + Forms + Queries",
+              pricePer1000: 64.17,
+              id: "layout-forms-queries",
+            },
+            {
+              name: "Layout + Forms + Tables + Queries",
+              pricePer1000: 81.67,
+              id: "layout-forms-tables-queries",
+            },
+          ],
+          "Specialized APIs": [
+            {
+              name: "Analyze Lending (Lending Documents)",
+              pricePer1000: 81.67,
+              id: "analyze-lending",
+            },
+            {
+              name: "Analyze Expense (Invoices & Receipts)",
+              pricePer1000: 11.67,
+              id: "analyze-expense",
+            },
+            {
+              name: "Analyze ID (Identity Documents)",
+              pricePer1000: 29.17,
+              id: "analyze-id",
+            },
+          ],
+          "Custom Features": [
+            {
+              name: "Custom Queries",
+              pricePer1000: 29.17,
+              id: "custom-queries",
+            },
+            {
+              name: "Custom Queries + Pretrained Tables",
+              pricePer1000: 35.0,
+              id: "custom-queries-tables",
+            },
+            {
+              name: "Custom Queries + Pretrained Forms",
+              pricePer1000: 75.83,
+              id: "custom-queries-forms",
+            },
+            {
+              name: "Custom Queries + Pretrained Forms + Pretrained Tables",
+              pricePer1000: 93.33,
+              id: "custom-queries-forms-tables",
+            },
+          ],
+        },
+        "ap-northeast-1": {
+          name: "Asia Pacific (Tokyo)",
+          "Pretrained Features": [
+            {
+              name: "Detect Document Text",
+              pricePer1000: 1.8,
+              id: "detect-text",
+            },
+            { name: "Layout", pricePer1000: 4.8, id: "layout" },
+            { name: "Queries", pricePer1000: 18.0, id: "queries" },
+            { name: "Tables", pricePer1000: 18.0, id: "tables" },
+            { name: "Forms", pricePer1000: 60.0, id: "forms" },
+            { name: "Signatures", pricePer1000: 4.2, id: "signatures" },
+            {
+              name: "Tables + Queries",
+              pricePer1000: 24.0,
+              id: "tables-queries",
+            },
+            {
+              name: "Forms + Queries",
+              pricePer1000: 66.0,
+              id: "forms-queries",
+            },
+            { name: "Tables + Forms", pricePer1000: 78.0, id: "tables-forms" },
+            {
+              name: "Tables + Forms + Queries",
+              pricePer1000: 84.0,
+              id: "tables-forms-queries",
+            },
+            { name: "Layout + Forms", pricePer1000: 60.0, id: "layout-forms" },
+            {
+              name: "Layout + Tables",
+              pricePer1000: 18.0,
+              id: "layout-tables",
+            },
+            {
+              name: "Layout + Queries",
+              pricePer1000: 18.0,
+              id: "layout-queries",
+            },
+            {
+              name: "Layout + Forms + Tables",
+              pricePer1000: 78.0,
+              id: "layout-forms-tables",
+            },
+            {
+              name: "Layout + Tables + Queries",
+              pricePer1000: 24.0,
+              id: "layout-tables-queries",
+            },
+            {
+              name: "Layout + Forms + Queries",
+              pricePer1000: 66.0,
+              id: "layout-forms-queries",
+            },
+            {
+              name: "Layout + Forms + Tables + Queries",
+              pricePer1000: 84.0,
+              id: "layout-forms-tables-queries",
+            },
+          ],
+          "Specialized APIs": [
+            {
+              name: "Analyze Lending (Lending Documents)",
+              pricePer1000: 84.0,
+              id: "analyze-lending",
+            },
+            {
+              name: "Analyze Expense (Invoices & Receipts)",
+              pricePer1000: 12.0,
+              id: "analyze-expense",
+            },
+            {
+              name: "Analyze ID (Identity Documents)",
+              pricePer1000: 26.0,
+              id: "analyze-id",
+            },
+          ],
+          "Custom Features": [
+            {
+              name: "Custom Queries",
+              pricePer1000: 26.0,
+              id: "custom-queries",
+            },
+            {
+              name: "Custom Queries + Pretrained Tables",
+              pricePer1000: 31.0,
+              id: "custom-queries-tables",
+            },
+            {
+              name: "Custom Queries + Pretrained Forms",
+              pricePer1000: 67.0,
+              id: "custom-queries-forms",
+            },
+            {
+              name: "Custom Queries + Pretrained Forms + Pretrained Tables",
+              pricePer1000: 85.0,
+              id: "custom-queries-forms-tables",
+            },
+          ],
+        },
+      };
+
+      // Function to create a calculator row for a feature
+      function createCalculatorRow(feature, containerId) {
+        const row = document.createElement("div");
+        row.className =
+          "grid grid-cols-1 md:grid-cols-4 gap-4 items-center bg-gray-50 p-4 rounded-lg shadow-sm";
+        row.innerHTML = `
+                <div class="col-span-1 md:col-span-2 text-gray-800">${
+                  feature.name
+                }</div>
+                <div id="${
+                  feature.id
+                }-price" class="text-gray-800">${feature.pricePer1000.toFixed(
+          2
+        )}</div>
+                <div>
+                    <input type="number" id="${
+                      feature.id
+                    }-pages" value="0" min="0" class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <span id="${
+                      feature.id
+                    }-cost" class="text-gray-800 font-bold">$0.00</span>
+                </div>
+            `;
+        document.getElementById(containerId).appendChild(row);
+      }
+
+      // Function to update the prices and re-calculate the costs
+      function updatePricing() {
+        const regionSelector = document.getElementById("region-selector");
+        const selectedRegion = regionSelector.value;
+        const pricingData = PRICING_DATA[selectedRegion];
+
+        // Re-populate all rows to ensure they are up to date
+        populateCalculator(selectedRegion);
+        calculateCosts();
+      }
+
+      // Function to populate the calculator UI with the initial region's pricing data
+      function populateCalculator(regionCode) {
+        const pricingData = PRICING_DATA[regionCode];
+
+        // Clear previous rows
+        document.getElementById("pretrained-features").innerHTML = "";
+        document.getElementById("specialized-apis").innerHTML = "";
+        document.getElementById("custom-features").innerHTML = "";
+
+        pricingData["Pretrained Features"].forEach((feature) =>
+          createCalculatorRow(feature, "pretrained-features")
+        );
+        pricingData["Specialized APIs"].forEach((feature) =>
+          createCalculatorRow(feature, "specialized-apis")
+        );
+        pricingData["Custom Features"].forEach((feature) =>
+          createCalculatorRow(feature, "custom-features")
+        );
+
+        // Re-attach event listeners to the new input fields
+        document.querySelectorAll('input[type="number"]').forEach((input) => {
+          input.addEventListener("input", calculateCosts);
+        });
+      }
+
+      // Function to perform all calculations
+      function calculateCosts() {
+        let totalCost = 0;
+        const regionSelector = document.getElementById("region-selector");
+        const selectedRegion = regionSelector.value;
+        const pricingData = PRICING_DATA[selectedRegion];
+
+        // Combine all features into one array for easier iteration
+        const allFeatures = [
+          ...pricingData["Pretrained Features"],
+          ...pricingData["Specialized APIs"],
+          ...pricingData["Custom Features"],
+        ];
+
+        allFeatures.forEach((feature) => {
+          const pagesInput = document.getElementById(`${feature.id}-pages`);
+          const costSpan = document.getElementById(`${feature.id}-cost`);
+
+          if (pagesInput && costSpan) {
+            const pages = parseInt(pagesInput.value) || 0;
+            // Note: This calculator uses the pricing tier for the first 1M pages per month.
+            const cost = (pages / 1000) * feature.pricePer1000;
+            costSpan.textContent = `$${cost.toFixed(2)}`;
+            totalCost += cost;
+          }
+        });
+
+        document.getElementById(
+          "total-cost"
+        ).textContent = `$${totalCost.toFixed(2)}`;
+      }
+
+      // Function to reset all inputs
+      function resetCalculator() {
+        const inputs = document.querySelectorAll('input[type="number"]');
+        inputs.forEach((input) => {
+          input.value = "0";
+        });
+        document.getElementById("region-selector").value = "us-east-1"; // Reset to default region
+        populateCalculator("us-east-1");
+        calculateCosts();
+      }
+
+      // Function to download the data as a CSV file
+      function downloadCSV() {
+        const regionSelector = document.getElementById("region-selector");
+        const selectedRegion =
+          regionSelector.options[regionSelector.selectedIndex].text;
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += `Region,${selectedRegion}\n\n`;
+        csvContent +=
+          "Feature,Pages per Month,Price per 1000 Pages,Monthly Cost\n";
+
+        const selectedPricingData = PRICING_DATA[regionSelector.value];
+        const allFeatures = [
+          ...selectedPricingData["Pretrained Features"],
+          ...selectedPricingData["Specialized APIs"],
+          ...selectedPricingData["Custom Features"],
+        ];
+
+        allFeatures.forEach((feature) => {
+          const pagesInput = document.getElementById(`${feature.id}-pages`);
+          const costSpan = document.getElementById(`${feature.id}-cost`);
+          const priceSpan = document.getElementById(`${feature.id}-price`);
+
+          if (pagesInput && costSpan && priceSpan) {
+            const pages = pagesInput.value;
+            const price = priceSpan.textContent;
+            const cost = costSpan.textContent.replace("$", "");
+            csvContent += `${feature.name},${pages},${price},${cost}\n`;
+          }
+        });
+
+        const totalCost = document
+          .getElementById("total-cost")
+          .textContent.replace("$", "");
+        csvContent += `\nTotal Monthly Cost,,${totalCost}\n`;
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute(
+          "download",
+          `aws-textract-pricing-${selectedRegion.replace(/\s/g, "-")}.csv`
+        );
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      // Main function to run on page load
+      window.onload = function () {
+        // Populate the calculator UI with the initial default region's pricing
+        populateCalculator("us-east-1");
+
+        // Add event listeners to the region selector
+        const regionSelector = document.getElementById("region-selector");
+        regionSelector.addEventListener("change", updatePricing);
+
+        // Add event listener for the reset button
+        document
+          .getElementById("reset-button")
+          .addEventListener("click", resetCalculator);
+
+        // Add event listener for the download button
+        document
+          .getElementById("download-button")
+          .addEventListener("click", downloadCSV);
+
+        // Initial calculation
+        calculateCosts();
+      };
+    </script>
+  </body>
+</html>
